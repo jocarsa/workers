@@ -1,0 +1,26 @@
+<!doctype html>
+<html>
+    <head>
+    </head>
+    <body>
+        <script>
+            var fechainicio = new Date()
+            var inicio = fechainicio.getTime()
+            console.log(inicio);
+            
+            let iteraciones = 1000000000
+            let numerooriginal = 1.0000000005345
+            
+            for(let i = 0;i<iteraciones;i++){
+                numerooriginal *= 1.000000000645
+            }
+            
+            var fechafinal = new Date()
+            var final = fechafinal.getTime()
+            console.log(final);
+            
+            var tiempotranscurrido = final-inicio;
+            console.log(tiempotranscurrido)
+        </script>
+    </body>
+</html>

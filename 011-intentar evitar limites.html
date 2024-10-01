@@ -1,0 +1,119 @@
+<!doctype html>
+<html>
+    <head>
+        <style>
+            html,body{
+                padding:0px;
+                margin:0px;
+                overflow:hidden;
+            }
+            canvas{
+                image-rendering: pixelated;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas></canvas>
+        <script>
+            let anchura = window.innerWidth; // Canvas width
+            let altura = window.innerHeight; // Canvas height
+            const lienzo = document.querySelector("canvas"); // Select the canvas
+            const contexto = lienzo.getContext("2d"); // Create a 2D context
+
+            lienzo.width = anchura; // Set canvas width
+            lienzo.height = altura; // Set canvas height
+
+            contexto.fillStyle = "white";
+            contexto.fillRect(0, 0, anchura, altura);
+
+            var datos = contexto.getImageData(0, 0, anchura, altura);
+
+            for (let i = 0; i < datos.data.length; i += 4) {
+                if (Math.random() < 0.2) {
+                    datos.data[i] = 0;    // Set pixel color to black
+                    datos.data[i + 1] = 0;
+                    datos.data[i + 2] = 0;
+                }
+            }
+            contexto.putImageData(datos, 0, 0);
+
+            var numerotrabajadores = 32;
+            var trabajadores = [];
+            for (let i = 0; i < numerotrabajadores; i++) {
+                trabajadores.push(new Worker("011-worker.js"));
+            }
+
+            var temporizador = setTimeout(bucle, 1000); // Set initial loop execution
+
+            function bucle() {
+                let semaforo = 0; // Semaphore to track workers' responses
+
+                for (let i = 0; i < numerotrabajadores; i++) {
+                    let misdatos = contexto.getImageData(
+                        0,
+                        altura / numerotrabajadores * i-1,
+                        anchura,
+                        altura / numerotrabajadores+2
+                    );
+                    let temporal = contexto.getImageData(
+                        0,
+                        altura / numerotrabajadores * i-1,
+                        anchura,
+                        altura / numerotrabajadores+2
+                    );
+
+                    let datos1 = [];
+                    for (let j = 0; j < misdatos.data.length; j += 4) {
+                        datos1.push(misdatos.data[j] / 255); // Normalize to 0 or 1
+                    }
+
+                    let datos2 = [];
+                    for (let j = 0; j < temporal.data.length; j += 4) {
+                        datos2.push(temporal.data[j] / 255); // Normalize to 0 or 1
+                    }
+
+                    // Send data to the worker
+                    trabajadores[i].postMessage([datos1, datos2, anchura, altura / numerotrabajadores]);
+
+                    (function(i) {
+                        trabajadores[i].onmessage = function (datosvuelven) {
+                            semaforo++;
+                            let offsetY = altura / numerotrabajadores * i;
+
+                            for (let j = 0; j < temporal.data.length; j += 4) {
+                                temporal.data[j] = datosvuelven.data[j / 4] * 255;
+                                temporal.data[j + 1] = datosvuelven.data[j / 4] * 255;
+                                temporal.data[j + 2] = datosvuelven.data[j / 4] * 255;
+                                temporal.data[j + 3] = 255;
+                            }
+
+                            contexto.putImageData(temporal, 0, offsetY-1);
+
+                            if (semaforo === numerotrabajadores) {
+                                requestAnimationFrame(bucle)
+                                //clearTimeout(temporizador);
+                                //temporizador = setTimeout(bucle, 0); // Restart the loop
+                            }
+                        };
+                    })(i);
+                }
+            }
+
+            bucle(); // Start the loop
+
+            var raton = false;
+            lienzo.onmousedown = function () {
+                raton = true;
+            };
+            lienzo.onmouseup = function () {
+                raton = false;
+            };
+            lienzo.onmousemove = function (e) {
+                if (raton) {
+                    contexto.fillStyle = "black";
+                    contexto.fillRect(e.offsetX, e.offsetY, 4, 4);
+                }
+            };
+        </script>
+    </body>
+</html>

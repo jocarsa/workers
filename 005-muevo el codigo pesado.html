@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+    <head>
+    </head>
+    <body>
+        <script>
+            var fechainicio = new Date()
+            var inicio = fechainicio.getTime()
+            console.log(inicio);
+            
+            var nucleos = navigator.hardwareConcurrency;
+            console.log("Tu sistema tiene",nucleos,"nucleos")
+            
+            var trabajador = new Worker("005-worker.js")
+            
+            trabajador.postMessage(nucleos)
+            trabajador.onmessage = function(){
+                console.log("El trabajador ha vuelto")
+                var fechafinal = new Date()
+                var final = fechafinal.getTime()
+                console.log(final);
+
+                var tiempotranscurrido = final-inicio;
+                console.log(tiempotranscurrido)
+            }
+            
+            
+            
+            
+        </script>
+    </body>
+</html>

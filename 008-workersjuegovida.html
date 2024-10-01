@@ -1,0 +1,132 @@
+<!doctype html>
+<html>
+    <head>
+        <style>
+            html,body{
+                padding:0px;
+                margin:0px;
+                overflow:hidden;
+            }
+            canvas{
+                
+                image-rendering: pixelated;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas></canvas>
+        <script>
+            let anchura = window.innerWidth                                   // Defino la anchura del lienzo
+            let altura = window.innerHeight                                // En este caso la anchura es la misma que la altura
+            const lienzo = document.querySelector("canvas")     // Selecciono el lienzo
+            const contexto = lienzo.getContext("2d")            // Creo un contexto 2d
+            
+            lienzo.width = anchura                              // Al lienzo le pongo la anchura
+            lienzo.height = altura                              // Al lienzo le pongo la altura
+        
+            
+            contexto.fillStyle = "white"
+            contexto.fillRect(0,0,anchura,altura)
+            
+            var datos = contexto.getImageData(0,0,anchura,anchura)
+            
+            for(let i = 0;i<datos.data.length;i+=4){
+                if(Math.random() < 0.2){
+                    datos.data[i] = 0;
+                    datos.data[i+1] = 0;
+                    datos.data[i+2] = 0;
+                }
+            }
+            contexto.putImageData(datos,0,0)
+            var trabajador1 = new Worker("008-worker.js");           // Creo un nuevo trabajador
+            var trabajador2 = new Worker("008-worker.js");           // Creo un nuevo trabajador
+            var temporizador = setTimeout("bucle()",1000)           // Preparo la ejecucion del bucle
+            function bucle(){                                       // Ejecuto esto en bucle
+                ////////////////////////TRABAJADOR 1/////////////////////////////
+                let misdatos = contexto.getImageData(
+                    0,
+                    0,
+                    anchura,
+                    altura/2
+                )                                                   // Leo todos los datos del lienzo
+                let temporal = contexto.getImageData(
+                    0,
+                    0,
+                    anchura,
+                    altura/2
+                )                                                   // Leo todos los datos del lienzo temporal
+                trabajador1.postMessage(
+                    [
+                        misdatos.data,
+                        temporal.data,
+                        anchura,
+                        altura/2
+                    ]
+                )                                                   // Al trabajador le envío una colección de datos
+                
+                trabajador1.onmessage = function(datosvuelven){      // Cuando el trabajador me responde
+
+                    for(let i = 0;i<temporal.data.length;i++){     // Proceso los datos que me ha enviado
+                        temporal.data[i] = datosvuelven.data[i]     // Este es el canal rojo
+
+                    }
+                    contexto.putImageData(temporal,0,0)             // En el contexto pongo la imagen
+                    
+                }
+            
+             ////////////////////////TRABAJADOR 1/////////////////////////////   
+                
+            
+                ////////////////////////TRABAJADOR 2/////////////////////////////
+                misdatos = contexto.getImageData(
+                    0,
+                    altura/2,
+                    anchura,
+                    altura/2
+                )                                                   // Leo todos los datos del lienzo
+                temporal = contexto.getImageData(
+                    0,
+                    altura/2,
+                    anchura,
+                    altura/2
+                )                                                   // Leo todos los datos del lienzo temporal
+                trabajador2.postMessage(
+                    [
+                        misdatos.data,
+                        temporal.data,
+                        anchura,
+                        altura/2
+                    ]
+                )                                                   // Al trabajador le envío una colección de datos
+                
+                trabajador2.onmessage = function(datosvuelven){      // Cuando el trabajador me responde
+
+                    for(let i = 0;i<temporal.data.length;i++){     // Proceso los datos que me ha enviado
+                        temporal.data[i] = datosvuelven.data[i]     // Este es el canal rojo
+
+                    }
+                    contexto.putImageData(temporal,0,altura/2)             // En el contexto pongo la imagen
+                   
+                }
+            
+             ////////////////////////TRABAJADOR 2///////////////////////////// 
+                clearTimeout(temporizador)                      // Elimino temporizador anterior
+                temporizador = setTimeout("bucle()",100)           // Vuelvo a iniciarlo
+            }
+            bucle()
+            var raton = false;
+            lienzo.onmousedown = function(){
+                raton = true;
+            }
+            lienzo.onmouseup = function(){
+                raton = false;
+            }
+            lienzo.onmousemove = function(e){
+                if(raton){
+                    contexto.fillStyle = "black"
+                    contexto.fillRect(e.offsetX,e.offsetY,4,4)
+                }
+            }
+        </script>
+    </body>
+</html>
